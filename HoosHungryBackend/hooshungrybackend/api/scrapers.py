@@ -64,7 +64,7 @@ def main(dump_dir: str = "ohill_dumps", also_split_files: bool = False):
     with open(out_path, "w", encoding="utf-8") as f:
         json.dump(combined, f, indent=2)
 
-    print(f"Wrote {out_path}")
+    return combined
 
 if __name__ == "__main__":
     main(also_split_files=True)
