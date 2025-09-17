@@ -2,7 +2,7 @@ import datetime
 from django.test import TestCase
 from api.models import (
     DiningHall, Day, Period, Station,
-    MenuItem, Allergen, Ingredient, NutritionInfo
+    MenuItem, Allergen, NutritionInfo
 )
 
 class DiningModelsTest(TestCase):
@@ -24,7 +24,7 @@ class DiningModelsTest(TestCase):
 
         # Period
         self.period = Period.objects.create(
-            type="Lunch",
+            name="Lunch",
             vendor_id="1423",
             start_time=datetime.time(11, 0),
             end_time=datetime.time(14, 0),
@@ -41,7 +41,7 @@ class DiningModelsTest(TestCase):
         # Ingredients + Allergens
         self.peanut = Allergen.objects.create(name="Peanuts")
         self.wheat = Allergen.objects.create(name="Wheat")
-        self.tomato = Ingredient.objects.create(name="Tomato")
+        
 
         # MenuItem FIRST
         self.item = MenuItem.objects.create(
@@ -49,17 +49,18 @@ class DiningModelsTest(TestCase):
             item_name="Peanut Butter Sandwich",
             is_gluten=True,
             is_vegetarian=True,
+            ingredients = "Chicken, Peanuts"
         )
         self.item.allergens.add(self.peanut, self.wheat)
-        self.item.ingredients.add(self.tomato)
+        
 
         # Then attach NutritionInfo to that item
         self.nutrition = NutritionInfo.objects.create(
             menu_item=self.item,
             calories=350,
             protein=20,
-            carbs=30,
-            sugar=5,
+            total_carbohydrates=30,
+            total_sugars=5,
             sodium=500,
         )
 
@@ -106,14 +107,12 @@ class DiningModelsTest(TestCase):
 
     def test_menuitem_str(self):
         self.assertEqual(str(self.item), "Peanut Butter Sandwich")
+        self.assertEqual(str(self.item.ingredients), "Chicken, Peanuts")
 
     def test_allergen_str(self):
         self.assertEqual(str(self.peanut), "Peanuts")
 
-    def test_ingredient_str(self):
-        self.assertEqual(str(self.tomato), "Tomato")
-
     def test_nutritioninfo_str(self):
         # depends on which fields are filled
-        expected = "Calories: 350, Protein: 20g, Carbs: 30g, Sugar: 5g, Sodium: 500mg"
+        expected = "Calories: 350, Protein: 20g, Carbs: 30g, Sugars: 5g, Sodium: 500mg"
         self.assertEqual(str(self.item.nutrition_info), expected)
