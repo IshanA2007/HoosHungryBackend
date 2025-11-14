@@ -143,13 +143,30 @@ class LiveCampusDishIngestTests(TestCase):
 
         # If nutrition exists for any item, it should save decimals (not crash)
         # We don't assert counts because some live menus omit nutrition.
+        # If nutrition exists, verify serving_size is saved (if present in upstream data)
         if items.exists():
             any_item = items.first()
-            # Nutrition OneToOne is optional, so only touch if present
             if hasattr(any_item, "nutrition_info"):
                 n = any_item.nutrition_info
-                # Sanity: attributes exist; not asserting values because live data varies
-                _ = n.calories  # just access to ensure field is there
+                
+                # Calories sanity check already present
+                _ = n.calories
+
+                # New test: serving_size (string) should be set if source had ServingSize/Unit
+                self.assertTrue(
+                    hasattr(n, "serving_size"),
+                    "NutritionInfo should have a serving_size field"
+                )
+                # Serving size may not exist for all items, but if it does, ensure it is non-empty
+                if n.serving_size:
+                    self.assertIsInstance(
+                        n.serving_size, str,
+                        "serving_size should store a string like '1/2 cup'"
+                    )
+                    self.assertGreater(
+                        len(n.serving_size), 0,
+                        "serving_size should not be an empty string when present"
+                    )
 
     def test_ingest_newcomb_live(self):
         data, hours = _fetch_and_build("newcomb")

@@ -72,6 +72,7 @@ class NutritionInfo(models.Model):
     dietary_fiber = models.DecimalField(max_digits=6, decimal_places=2, blank=True, null=True)
     sodium = models.DecimalField(max_digits=6, decimal_places=2, blank=True, null=True)
     menu_item = models.OneToOneField(MenuItem, on_delete=models.CASCADE, related_name="nutrition_info")
+    serving_size = models.CharField(max_length=100, blank=True, null=True)
 
 
     def __str__(self):
