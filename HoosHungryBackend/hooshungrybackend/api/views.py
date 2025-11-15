@@ -11,6 +11,7 @@ PERIOD_NAME_MAP = {
     "lunch": "Lunch",
     "dinner": "Dinner",
     "late_night": "Late Night",
+    "brunch": "Brunch",
 }
 
 HALL_NAME_MAP = {
