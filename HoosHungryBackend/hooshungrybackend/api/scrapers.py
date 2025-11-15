@@ -56,7 +56,7 @@ def get_menu_data(hall_name: str):
         period_payloads[pid] = {"name": pname, "raw": payload}
 
     combined = {
-        "fetched_at": datetime.now(timezone.utc).replace(microsecond=0).isoformat() + "Z",
+        "fetched_at": datetime.now(NY_TZ).replace(microsecond=0).isoformat(),
         "base_url": url,
         "date": date_str,
         "location_id": location_id,
