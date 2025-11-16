@@ -113,3 +113,60 @@ def menu_info(request):
             {"error": f"An error occurred: {str(e)}"},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
+
+@api_view(["GET"])
+def available_periods(request):
+    hall_param = request.query_params.get("hall", "").lower()
+
+    # Validate hall
+    if hall_param not in HALL_NAME_MAP:
+        return Response(
+            {"error": f"Invalid hall. Must be one of: {', '.join(HALL_NAME_MAP.keys())}"},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    hall_name = HALL_NAME_MAP[hall_param]
+    today = date.today()
+
+    try:
+        dining_hall = DiningHall.objects.get(name=hall_name)
+
+        # Get today's day entry
+        day = Day.objects.filter(dining_hall=dining_hall, date=today).first()
+        if not day:
+            return Response(
+                {
+                    "dining_hall": hall_name,
+                    "date": str(today),
+                    "periods": []
+                }
+            )
+
+        # Get all periods for this day
+        periods = day.periods.all().order_by("start_time")
+
+        # Convert period names into keys: "Breakfast" → "breakfast"
+        periods_out = [
+            {
+                "key": p.name.lower().replace(" ", "_"),
+                "name": p.name
+            }
+            for p in periods
+        ]
+
+        return Response({
+            "dining_hall": hall_name,
+            "date": str(today),
+            "periods": periods_out
+        })
+
+    except DiningHall.DoesNotExist:
+        return Response(
+            {"error": f"Dining hall '{hall_name}' not found in database"},
+            status=status.HTTP_404_NOT_FOUND
+        )
+    except Exception as e:
+        return Response(
+            {"error": f"An error occurred: {str(e)}"},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
