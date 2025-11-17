@@ -21,6 +21,11 @@ class UserProfile(models.Model):
     # Add any other custom fields
     premium_member = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    default_calorie_goal = models.IntegerField(null=True, blank=True)
+    default_protein_goal = models.IntegerField(null=True, blank=True)
+    default_carbs_goal = models.IntegerField(null=True, blank=True)
+    default_fat_goal = models.IntegerField(null=True, blank=True)
     
     def __str__(self):
         return f"{self.user.username}'s profile"
