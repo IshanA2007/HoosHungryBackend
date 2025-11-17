@@ -10,8 +10,8 @@ class Plan(models.Model):
     name = models.CharField(max_length=200, default="My Meal Plan")
     description = models.TextField(blank=True)
     
-    # Week identification - stores the Monday of each week
-    week_start_date = models.DateField()  # Always a Monday
+    # Week identification - stores the Sunday of each week
+    week_start_date = models.DateField()  # Always a Sunday
     
     # Nutritional goals
     daily_calorie_goal = models.IntegerField(null=True, blank=True)
@@ -33,10 +33,14 @@ class Plan(models.Model):
     def get_or_create_for_week(cls, user, date):
         """
         Get or create a plan for the week containing the given date.
+        Weeks start on Sunday.
         Returns the Plan instance for that week.
         """
-        # Calculate the Monday of the week containing this date
-        monday = date - timedelta(days=date.weekday())
+        # Calculate the Sunday of the week containing this date
+        # weekday(): Mon=0, Tue=1, Wed=2, Thu=3, Fri=4, Sat=5, Sun=6
+        # We want to go back to the most recent Sunday (or stay on Sunday if it's Sunday)
+        days_since_sunday = (date.weekday() + 1) % 7
+        sunday = date - timedelta(days=days_since_sunday)
         
         # Get user profile defaults if available
         default_cals = None
@@ -52,9 +56,9 @@ class Plan(models.Model):
         
         plan, created = cls.objects.get_or_create(
             user=user,
-            week_start_date=monday,
+            week_start_date=sunday,
             defaults={
-                'name': f"Week of {monday.strftime('%B %d, %Y')}",
+                'name': f"Week of {sunday.strftime('%B %d, %Y')}",
                 'daily_calorie_goal': default_cals,
                 'daily_protein_goal': default_protein,
                 'daily_carbs_goal': default_carbs,
