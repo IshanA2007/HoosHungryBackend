@@ -44,7 +44,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'api',
     'plans',
-    'prompt',
+    'prompt.apps.PromptConfig',
 ]
 
 MIDDLEWARE = [

@@ -214,9 +214,14 @@ class ChatView(APIView):
                 messages=history,
             )
             response_text = ai_response.content[0].text
-        except anthropic.APIError:
+        except anthropic.APIError as e:
+            # TEMPORARY: expose error detail for debugging — remove before prod
+            import traceback
+            traceback.print_exc()
             return Response(
-                {'error': 'AI service temporarily unavailable. Please try again.'},
+                {'error': 'AI service temporarily unavailable. Please try again.',
+                 'debug_type': type(e).__name__,
+                 'debug_msg': str(e)},
                 status=status.HTTP_503_SERVICE_UNAVAILABLE,
             )
 
