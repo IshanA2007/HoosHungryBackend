@@ -4,6 +4,7 @@ from datetime import date as date_type, timedelta
 
 import anthropic
 from django.conf import settings
+from django.db import transaction
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -179,7 +180,10 @@ class ChatView(APIView):
     def post(self, request):
         user = request.user
         profile = user.profile
-        user_message = request.data.get('message', '').strip()
+        user_message_raw = request.data.get('message', '')
+        if not isinstance(user_message_raw, str):
+            return Response({'error': 'message must be a string'}, status=status.HTTP_400_BAD_REQUEST)
+        user_message = user_message_raw.strip()
 
         if not user_message:
             return Response({'error': 'message is required'}, status=status.HTTP_400_BAD_REQUEST)
@@ -202,29 +206,34 @@ class ChatView(APIView):
 
         # Call Claude Haiku
         client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
-        ai_response = client.messages.create(
-            model='claude-haiku-4-5-20251001',
-            max_tokens=1024,
-            system=system_prompt,
-            messages=history,
-        )
-        response_text = ai_response.content[0].text
+        try:
+            ai_response = client.messages.create(
+                model='claude-haiku-4-5-20251001',
+                max_tokens=1024,
+                system=system_prompt,
+                messages=history,
+            )
+            response_text = ai_response.content[0].text
+        except anthropic.APIError:
+            return Response(
+                {'error': 'AI service temporarily unavailable. Please try again.'},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
 
         # Parse response
         ai_message, suggestions = _parse_ai_response(response_text)
 
-        # Decrement usage (only for non-premium users)
-        if not profile.premium_member:
-            profile.decrement_ai_usage()
-
-        # Persist both messages
-        ChatMessage.objects.create(session=session, role='user', content=user_message)
-        ChatMessage.objects.create(
-            session=session,
-            role='assistant',
-            content=ai_message,
-            suggestions_json=suggestions,
-        )
+        # Persist both messages and decrement usage atomically
+        with transaction.atomic():
+            if not profile.premium_member:
+                profile.decrement_ai_usage()
+            ChatMessage.objects.create(session=session, role='user', content=user_message)
+            ChatMessage.objects.create(
+                session=session,
+                role='assistant',
+                content=ai_message,
+                suggestions_json=suggestions,
+            )
 
         result = {'message': ai_message}
         if suggestions:
