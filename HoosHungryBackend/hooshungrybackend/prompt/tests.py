@@ -157,3 +157,51 @@ class ChatViewTest(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn('suggestions', response.data)
         self.assertEqual(len(response.data['suggestions']), 1)
+
+
+class HistoryViewTest(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.user = User.objects.create_user(username='histuser', password='pass')
+        self.token = Token.objects.create(user=self.user)
+        self.client.credentials(HTTP_AUTHORIZATION=f'Token {self.token.key}')
+        self.url = '/api/prompt/history/'
+        # Seed some messages
+        session = ChatSession.objects.create(user=self.user)
+        ChatMessage.objects.create(session=session, role='user', content='Hello')
+        ChatMessage.objects.create(session=session, role='assistant', content='Hi there!')
+
+    def test_get_history_requires_auth(self):
+        unauth = APIClient()
+        self.assertEqual(unauth.get(self.url).status_code, 401)
+
+    def test_get_history_returns_messages(self):
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.data), 2)
+
+    def test_get_history_shape(self):
+        response = self.client.get(self.url)
+        msg = response.data[0]
+        self.assertIn('role', msg)
+        self.assertIn('content', msg)
+        self.assertIn('timestamp', msg)
+
+    def test_get_history_returns_empty_for_new_user(self):
+        new_user = User.objects.create_user(username='newuser2', password='pass')
+        token = Token.objects.create(user=new_user)
+        new_client = APIClient()
+        new_client.credentials(HTTP_AUTHORIZATION=f'Token {token.key}')
+        response = new_client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.data), 0)
+
+    def test_delete_history_clears_messages(self):
+        response = self.client.delete(self.url)
+        self.assertEqual(response.status_code, 204)
+        session = ChatSession.objects.get(user=self.user)
+        self.assertEqual(session.messages.count(), 0)
+
+    def test_delete_history_requires_auth(self):
+        unauth = APIClient()
+        self.assertEqual(unauth.delete(self.url).status_code, 401)

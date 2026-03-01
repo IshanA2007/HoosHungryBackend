@@ -236,7 +236,30 @@ class HistoryView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        return Response([])
+        """Return the user's full chat history."""
+        try:
+            session = ChatSession.objects.get(user=request.user)
+        except ChatSession.DoesNotExist:
+            return Response([], status=status.HTTP_200_OK)
+
+        messages = session.messages.all()
+        data = [
+            {
+                'id': msg.pk,
+                'role': msg.role,
+                'content': msg.content,
+                'suggestions': msg.suggestions_json,
+                'timestamp': msg.timestamp.isoformat(),
+            }
+            for msg in messages
+        ]
+        return Response(data, status=status.HTTP_200_OK)
 
     def delete(self, request):
+        """Clear the user's chat history."""
+        try:
+            session = ChatSession.objects.get(user=request.user)
+            session.messages.all().delete()
+        except ChatSession.DoesNotExist:
+            pass
         return Response(status=status.HTTP_204_NO_CONTENT)
