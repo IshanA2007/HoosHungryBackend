@@ -20,6 +20,9 @@ class UserProfile(models.Model):
     
     # Add any other custom fields
     premium_member = models.BooleanField(default=False)
+    is_vegan = models.BooleanField(default=False)
+    is_vegetarian = models.BooleanField(default=False)
+    is_gluten_free = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
     default_calorie_goal = models.IntegerField(null=True, blank=True)
