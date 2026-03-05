@@ -176,12 +176,26 @@ class MealItem(models.Model):
     protein_per_serving = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
     carbs_per_serving = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
     fat_per_serving = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
-    
+    # Extended nutrition (per serving, cached from NutritionInfo)
+    fiber_per_serving = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
+    sodium_per_serving = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
+    sugar_per_serving = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
+    cholesterol_per_serving = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
+    saturated_fat_per_serving = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
+    trans_fat_per_serving = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
+
     # Computed totals based on servings
     total_calories = models.IntegerField()
     total_protein = models.DecimalField(max_digits=6, decimal_places=2, default=Decimal('0.00'))
     total_carbs = models.DecimalField(max_digits=6, decimal_places=2, default=Decimal('0.00'))
     total_fat = models.DecimalField(max_digits=6, decimal_places=2, default=Decimal('0.00'))
+    # Extended nutrition totals (computed from per-serving × servings)
+    total_fiber = models.DecimalField(max_digits=6, decimal_places=2, default=Decimal('0.00'))
+    total_sodium = models.DecimalField(max_digits=6, decimal_places=2, default=Decimal('0.00'))
+    total_sugar = models.DecimalField(max_digits=6, decimal_places=2, default=Decimal('0.00'))
+    total_cholesterol = models.DecimalField(max_digits=6, decimal_places=2, default=Decimal('0.00'))
+    total_saturated_fat = models.DecimalField(max_digits=6, decimal_places=2, default=Decimal('0.00'))
+    total_trans_fat = models.DecimalField(max_digits=6, decimal_places=2, default=Decimal('0.00'))
     
     # Metadata
     dining_hall = models.CharField(max_length=50, blank=True)  # ohill, newcomb, runk
@@ -197,7 +211,13 @@ class MealItem(models.Model):
         self.total_protein = (self.protein_per_serving or Decimal('0')) * self.servings
         self.total_carbs = (self.carbs_per_serving or Decimal('0')) * self.servings
         self.total_fat = (self.fat_per_serving or Decimal('0')) * self.servings
-        
+        self.total_fiber = (self.fiber_per_serving or Decimal('0')) * self.servings
+        self.total_sodium = (self.sodium_per_serving or Decimal('0')) * self.servings
+        self.total_sugar = (self.sugar_per_serving or Decimal('0')) * self.servings
+        self.total_cholesterol = (self.cholesterol_per_serving or Decimal('0')) * self.servings
+        self.total_saturated_fat = (self.saturated_fat_per_serving or Decimal('0')) * self.servings
+        self.total_trans_fat = (self.trans_fat_per_serving or Decimal('0')) * self.servings
+
         super().save(*args, **kwargs)
         
         # Update daily plan totals
