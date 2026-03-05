@@ -51,7 +51,7 @@ class SuggestGoalsEndpointTest(TestCase):
         self.client.credentials(HTTP_AUTHORIZATION=f'Token {token.key}')
 
     def test_suggest_goals_returns_all_fields(self):
-        response = self.client.get('/api/accounts/profile/goals/suggest/')
+        response = self.client.get('/accounts/profile/goals/suggest/')
         self.assertEqual(response.status_code, 200)
         for field in ['calories', 'protein', 'carbs', 'fat', 'fiber', 'sodium']:
             self.assertIn(field, response.data)
@@ -61,15 +61,15 @@ class SuggestGoalsEndpointTest(TestCase):
         self.user.profile.goal_type = 'maintain'
         self.user.profile.activity_level = 'moderate'
         self.user.profile.save()
-        maintain_response = self.client.get('/api/accounts/profile/goals/suggest/')
+        maintain_response = self.client.get('/accounts/profile/goals/suggest/')
 
         self.user.profile.goal_type = 'lose'
         self.user.profile.save()
-        lose_response = self.client.get('/api/accounts/profile/goals/suggest/')
+        lose_response = self.client.get('/accounts/profile/goals/suggest/')
 
         self.assertLess(lose_response.data['calories'], maintain_response.data['calories'])
 
     def test_suggest_goals_requires_auth(self):
         self.client.credentials()
-        response = self.client.get('/api/accounts/profile/goals/suggest/')
+        response = self.client.get('/accounts/profile/goals/suggest/')
         self.assertEqual(response.status_code, 401)
