@@ -3,6 +3,8 @@ from django.contrib.auth.models import User
 from plans.models import Plan, DailyMealPlan, MealItem
 from decimal import Decimal
 import datetime
+from rest_framework.test import APIClient
+from rest_framework.authtoken.models import Token
 
 class MealItemNutritionTest(TestCase):
     def setUp(self):
@@ -111,3 +113,39 @@ class PlanFiberSodiumGoalsTest(TestCase):
         )
         self.assertEqual(plan.daily_fiber_goal, 25)
         self.assertEqual(plan.daily_sodium_goal, 2300)
+
+
+class PlanHistoryEndpointTest(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username='historyuser', password='pass')
+        self.client = APIClient()
+        token, _ = Token.objects.get_or_create(user=self.user)
+        self.client.credentials(HTTP_AUTHORIZATION=f'Token {token.key}')
+
+        plan = Plan.objects.create(
+            user=self.user,
+            week_start_date=datetime.date(2026, 3, 1),
+        )
+        DailyMealPlan.objects.create(
+            plan=plan,
+            date=datetime.date(2026, 3, 3),
+            total_calories=1800,
+        )
+        DailyMealPlan.objects.create(
+            plan=plan,
+            date=datetime.date(2026, 3, 4),
+            total_calories=2100,
+        )
+
+    def test_history_returns_daily_totals(self):
+        response = self.client.get('/api/plan/history/', {'days': 30})
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('history', response.data)
+        dates = [entry['date'] for entry in response.data['history']]
+        self.assertIn('2026-03-03', dates)
+        self.assertIn('2026-03-04', dates)
+
+    def test_history_requires_authentication(self):
+        self.client.credentials()  # Remove auth
+        response = self.client.get('/api/plan/history/')
+        self.assertEqual(response.status_code, 401)

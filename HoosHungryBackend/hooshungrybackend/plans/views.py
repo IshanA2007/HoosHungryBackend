@@ -2,7 +2,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
-from datetime import datetime
+from datetime import datetime, timedelta
 from django.shortcuts import get_object_or_404
 from decimal import Decimal, InvalidOperation
 
@@ -237,6 +237,42 @@ def delete_meal_item(request, item_id):
     
     meal_item.delete()
     return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_history(request):
+    """
+    Get daily nutrition totals for the past N days.
+    Query params: days (int, default=30, max=90)
+    """
+    try:
+        days = min(int(request.GET.get('days', 30)), 90)
+    except (ValueError, TypeError):
+        days = 30
+
+    end_date = datetime.now().date()
+    start_date = end_date - timedelta(days=days - 1)
+
+    daily_plans = DailyMealPlan.objects.filter(
+        plan__user=request.user,
+        date__gte=start_date,
+        date__lte=end_date,
+    ).order_by('date')
+
+    history = []
+    for dp in daily_plans:
+        history.append({
+            'date': dp.date.isoformat(),
+            'total_calories': dp.total_calories,
+            'total_protein': float(dp.total_protein),
+            'total_carbs': float(dp.total_carbs),
+            'total_fat': float(dp.total_fat),
+            'total_fiber': float(dp.total_fiber),
+            'total_sodium': float(dp.total_sodium),
+        })
+
+    return Response({'history': history})
 
 
 @api_view(['PATCH'])
