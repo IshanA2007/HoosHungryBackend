@@ -40,3 +40,21 @@ class MealItemNutritionTest(TestCase):
         self.assertEqual(item.total_cholesterol, Decimal('30.00'))
         self.assertEqual(item.total_saturated_fat, Decimal('4.00'))
         self.assertEqual(item.total_trans_fat, Decimal('0.00'))
+
+    def test_meal_item_handles_null_nutrients(self):
+        """Null per-serving values should produce 0.00 totals"""
+        item = MealItem.objects.create(
+            daily_plan=self.daily,
+            meal_type='breakfast',
+            menu_item_id=2,
+            menu_item_name='Plain Food',
+            servings=Decimal('1.00'),
+            calories_per_serving=100,
+            # All extended nutrients omitted (None)
+        )
+        self.assertEqual(item.total_fiber, Decimal('0.00'))
+        self.assertEqual(item.total_sodium, Decimal('0.00'))
+        self.assertEqual(item.total_sugar, Decimal('0.00'))
+        self.assertEqual(item.total_cholesterol, Decimal('0.00'))
+        self.assertEqual(item.total_saturated_fat, Decimal('0.00'))
+        self.assertEqual(item.total_trans_fat, Decimal('0.00'))

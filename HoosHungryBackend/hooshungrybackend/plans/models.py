@@ -178,9 +178,9 @@ class MealItem(models.Model):
     fat_per_serving = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
     # Extended nutrition (per serving, cached from NutritionInfo)
     fiber_per_serving = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
-    sodium_per_serving = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
+    sodium_per_serving = models.DecimalField(max_digits=7, decimal_places=2, null=True, blank=True)
     sugar_per_serving = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
-    cholesterol_per_serving = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
+    cholesterol_per_serving = models.DecimalField(max_digits=7, decimal_places=2, null=True, blank=True)
     saturated_fat_per_serving = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
     trans_fat_per_serving = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
 
@@ -191,9 +191,9 @@ class MealItem(models.Model):
     total_fat = models.DecimalField(max_digits=6, decimal_places=2, default=Decimal('0.00'))
     # Extended nutrition totals (computed from per-serving × servings)
     total_fiber = models.DecimalField(max_digits=6, decimal_places=2, default=Decimal('0.00'))
-    total_sodium = models.DecimalField(max_digits=6, decimal_places=2, default=Decimal('0.00'))
+    total_sodium = models.DecimalField(max_digits=7, decimal_places=2, default=Decimal('0.00'))
     total_sugar = models.DecimalField(max_digits=6, decimal_places=2, default=Decimal('0.00'))
-    total_cholesterol = models.DecimalField(max_digits=6, decimal_places=2, default=Decimal('0.00'))
+    total_cholesterol = models.DecimalField(max_digits=7, decimal_places=2, default=Decimal('0.00'))
     total_saturated_fat = models.DecimalField(max_digits=6, decimal_places=2, default=Decimal('0.00'))
     total_trans_fat = models.DecimalField(max_digits=6, decimal_places=2, default=Decimal('0.00'))
     
