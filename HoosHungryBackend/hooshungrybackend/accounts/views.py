@@ -5,7 +5,7 @@ from rest_framework.authtoken.models import Token
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
-from .serializers import UserSerializer, PlanSerializer
+from .serializers import UserSerializer, PlanSerializer, UserProfileSerializer
 from .models import Plan
 
 @api_view(['POST'])
@@ -152,15 +152,17 @@ def delete_plan(request, plan_id):
 def update_profile(request):
     """Update user profile fields"""
     profile = request.user.profile
-    
-    # Allow updating specific fields
-    if 'remaining_ai_usages' in request.data:
-        profile.remaining_ai_usages = request.data['remaining_ai_usages']
-    
-    if 'premium_member' in request.data:
-        profile.premium_member = request.data['premium_member']
-    
+
+    updatable = [
+        'is_vegan', 'is_vegetarian', 'is_gluten_free',
+        'default_calorie_goal', 'default_protein_goal',
+        'default_carbs_goal', 'default_fat_goal',
+        'goal_type', 'activity_level',
+    ]
+    for field in updatable:
+        if field in request.data:
+            setattr(profile, field, request.data[field])
+
     profile.save()
-    
     serializer = UserProfileSerializer(profile)
     return Response(serializer.data)

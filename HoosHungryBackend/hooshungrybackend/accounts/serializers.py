@@ -15,7 +15,8 @@ class UserProfileSerializer(serializers.ModelSerializer):
         fields = ['remaining_ai_usages', 'plans', 'premium_member', 'created_at',
                   'is_vegan', 'is_vegetarian', 'is_gluten_free',
                   'default_calorie_goal', 'default_protein_goal',
-                  'default_carbs_goal', 'default_fat_goal']
+                  'default_carbs_goal', 'default_fat_goal',
+                  'goal_type', 'activity_level']
 
 class UserSerializer(serializers.ModelSerializer):
     profile = UserProfileSerializer(read_only=True)

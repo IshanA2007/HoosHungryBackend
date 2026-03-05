@@ -1,6 +1,7 @@
 from django.test import TestCase
 from django.contrib.auth.models import User
 from .models import UserProfile
+from accounts.models import UserProfile
 
 class UserProfileDietaryPrefsTest(TestCase):
     def setUp(self):
@@ -18,3 +19,24 @@ class UserProfileDietaryPrefsTest(TestCase):
         profile.save()
         profile.refresh_from_db()
         self.assertTrue(profile.is_vegan)
+
+class UserProfileGoalFieldsTest(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username='goaluser', password='pass')
+
+    def test_profile_has_goal_type_and_activity_level(self):
+        profile = self.user.profile
+        profile.goal_type = 'lose'
+        profile.activity_level = 'moderate'
+        profile.save()
+        profile.refresh_from_db()
+        self.assertEqual(profile.goal_type, 'lose')
+        self.assertEqual(profile.activity_level, 'moderate')
+
+    def test_goal_type_defaults_to_maintain(self):
+        profile = self.user.profile
+        self.assertEqual(profile.goal_type, 'maintain')
+
+    def test_activity_level_defaults_to_moderate(self):
+        profile = self.user.profile
+        self.assertEqual(profile.activity_level, 'moderate')
