@@ -58,3 +58,41 @@ class MealItemNutritionTest(TestCase):
         self.assertEqual(item.total_cholesterol, Decimal('0.00'))
         self.assertEqual(item.total_saturated_fat, Decimal('0.00'))
         self.assertEqual(item.total_trans_fat, Decimal('0.00'))
+
+
+class DailyMealPlanNutritionTest(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username='user2', password='pass')
+        self.plan = Plan.objects.create(
+            user=self.user,
+            week_start_date=datetime.date(2026, 3, 1),
+        )
+        self.daily = DailyMealPlan.objects.create(
+            plan=self.plan,
+            date=datetime.date(2026, 3, 3),
+        )
+
+    def test_daily_plan_aggregates_extended_nutrients(self):
+        MealItem.objects.create(
+            daily_plan=self.daily,
+            meal_type='lunch',
+            menu_item_id=1,
+            menu_item_name='Food A',
+            servings=Decimal('1.00'),
+            calories_per_serving=300,
+            fiber_per_serving=Decimal('4.00'),
+            sodium_per_serving=Decimal('500.00'),
+        )
+        MealItem.objects.create(
+            daily_plan=self.daily,
+            meal_type='dinner',
+            menu_item_id=2,
+            menu_item_name='Food B',
+            servings=Decimal('1.00'),
+            calories_per_serving=200,
+            fiber_per_serving=Decimal('2.00'),
+            sodium_per_serving=Decimal('300.00'),
+        )
+        self.daily.refresh_from_db()
+        self.assertEqual(self.daily.total_fiber, Decimal('6.00'))
+        self.assertEqual(self.daily.total_sodium, Decimal('800.00'))

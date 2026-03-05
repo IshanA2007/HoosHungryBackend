@@ -86,6 +86,12 @@ def get_daily_plan(request):
         'total_protein': float(daily_plan.total_protein),
         'total_carbs': float(daily_plan.total_carbs),
         'total_fat': float(daily_plan.total_fat),
+        'total_fiber': float(daily_plan.total_fiber),
+        'total_sodium': float(daily_plan.total_sodium),
+        'total_sugar': float(daily_plan.total_sugar),
+        'total_cholesterol': float(daily_plan.total_cholesterol),
+        'total_saturated_fat': float(daily_plan.total_saturated_fat),
+        'total_trans_fat': float(daily_plan.total_trans_fat),
         'meals': {
             'breakfast': MealItemSerializer(meals_by_type['breakfast'], many=True).data,
             'lunch': MealItemSerializer(meals_by_type['lunch'], many=True).data,
@@ -97,6 +103,8 @@ def get_daily_plan(request):
             'protein': plan.daily_protein_goal,
             'carbs': plan.daily_carbs_goal,
             'fat': plan.daily_fat_goal,
+            'fiber': None,
+            'sodium': None,
         }
     })
 

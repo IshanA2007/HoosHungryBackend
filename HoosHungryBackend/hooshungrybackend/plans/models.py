@@ -119,7 +119,13 @@ class DailyMealPlan(models.Model):
     total_protein = models.DecimalField(max_digits=6, decimal_places=2, default=Decimal('0.00'))
     total_carbs = models.DecimalField(max_digits=6, decimal_places=2, default=Decimal('0.00'))
     total_fat = models.DecimalField(max_digits=6, decimal_places=2, default=Decimal('0.00'))
-    
+    total_fiber = models.DecimalField(max_digits=7, decimal_places=2, default=Decimal('0.00'))
+    total_sodium = models.DecimalField(max_digits=8, decimal_places=2, default=Decimal('0.00'))
+    total_sugar = models.DecimalField(max_digits=7, decimal_places=2, default=Decimal('0.00'))
+    total_cholesterol = models.DecimalField(max_digits=7, decimal_places=2, default=Decimal('0.00'))
+    total_saturated_fat = models.DecimalField(max_digits=6, decimal_places=2, default=Decimal('0.00'))
+    total_trans_fat = models.DecimalField(max_digits=6, decimal_places=2, default=Decimal('0.00'))
+
     class Meta:
         unique_together = ['plan', 'date']
         ordering = ['date']
@@ -134,6 +140,12 @@ class DailyMealPlan(models.Model):
         self.total_protein = sum(item.total_protein for item in items)
         self.total_carbs = sum(item.total_carbs for item in items)
         self.total_fat = sum(item.total_fat for item in items)
+        self.total_fiber = sum(item.total_fiber for item in items)
+        self.total_sodium = sum(item.total_sodium for item in items)
+        self.total_sugar = sum(item.total_sugar for item in items)
+        self.total_cholesterol = sum(item.total_cholesterol for item in items)
+        self.total_saturated_fat = sum(item.total_saturated_fat for item in items)
+        self.total_trans_fat = sum(item.total_trans_fat for item in items)
         self.save()
     
     def get_meals_by_type(self):
