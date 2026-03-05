@@ -149,3 +149,59 @@ class PlanHistoryEndpointTest(TestCase):
         self.client.credentials()  # Remove auth
         response = self.client.get('/api/plan/history/')
         self.assertEqual(response.status_code, 401)
+
+
+class AddMealItemNutritionTest(TestCase):
+    def setUp(self):
+        from api.models import MenuItem, NutritionInfo, DiningHall, Day, Period, Station
+        self.user = User.objects.create_user(username='adduser', password='pass')
+        self.client = APIClient()
+        token, _ = Token.objects.get_or_create(user=self.user)
+        self.client.credentials(HTTP_AUTHORIZATION=f'Token {token.key}')
+
+        # Build minimum dining hall chain
+        hall = DiningHall.objects.create(name='ohill', scrape_url='http://test.com')
+        day = Day.objects.create(
+            date=datetime.date(2026, 3, 3),
+            day_name='Tuesday',
+            open_time=datetime.time(7, 0),
+            close_time=datetime.time(21, 0),
+            dining_hall=hall,
+        )
+        period = Period.objects.create(
+            name='Lunch', vendor_id='1',
+            start_time=datetime.time(11, 0), end_time=datetime.time(14, 0), day=day
+        )
+        station = Station.objects.create(name='Grill', number='1', period=period)
+        self.menu_item = MenuItem.objects.create(
+            station=station, item_name='Test Burger',
+            is_vegan=False, is_vegetarian=False
+        )
+        NutritionInfo.objects.create(
+            menu_item=self.menu_item,
+            calories=Decimal('500'),
+            protein=Decimal('30'),
+            total_carbohydrates=Decimal('40'),
+            total_fat=Decimal('20'),
+            dietary_fiber=Decimal('5'),
+            sodium=Decimal('800'),
+            total_sugars=Decimal('6'),
+            cholesterol=Decimal('70'),
+            saturated_fat=Decimal('8'),
+            trans_fat=Decimal('0'),
+        )
+
+    def test_add_item_populates_extended_nutrients(self):
+        response = self.client.post('/api/plan/add-item/', {
+            'date': '2026-03-03',
+            'menu_item_id': self.menu_item.id,
+            'meal_type': 'lunch',
+            'servings': 1,
+        }, format='json')
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(float(response.data['total_fiber']), 5.0)
+        self.assertEqual(float(response.data['total_sodium']), 800.0)
+        self.assertEqual(float(response.data['total_sugar']), 6.0)
+        self.assertEqual(float(response.data['total_cholesterol']), 70.0)
+        self.assertEqual(float(response.data['total_saturated_fat']), 8.0)
+        self.assertEqual(float(response.data['total_trans_fat']), 0.0)

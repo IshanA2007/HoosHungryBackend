@@ -159,12 +159,18 @@ def add_meal_item(request):
     daily_plan = plan.get_or_create_daily_plan(date)
     
     # Extract nutrition info
-    nutrition = api_menu_item.nutrition_info if hasattr(api_menu_item, 'nutrition_info') else None
+    nutrition = getattr(api_menu_item, 'nutrition_info', None)
     calories = int(nutrition.calories) if nutrition and nutrition.calories else 0
     protein = nutrition.protein if nutrition else None
     carbs = nutrition.total_carbohydrates if nutrition else None
     fat = nutrition.total_fat if nutrition else None
-    
+    fiber = nutrition.dietary_fiber if nutrition else None
+    sodium = nutrition.sodium if nutrition else None
+    sugar = nutrition.total_sugars if nutrition else None
+    cholesterol = nutrition.cholesterol if nutrition else None
+    saturated_fat = nutrition.saturated_fat if nutrition else None
+    trans_fat = nutrition.trans_fat if nutrition else None
+
     # Create meal item
     meal_item = MealItem.objects.create(
         daily_plan=daily_plan,
@@ -176,6 +182,12 @@ def add_meal_item(request):
         protein_per_serving=protein,
         carbs_per_serving=carbs,
         fat_per_serving=fat,
+        fiber_per_serving=fiber,
+        sodium_per_serving=sodium,
+        sugar_per_serving=sugar,
+        cholesterol_per_serving=cholesterol,
+        saturated_fat_per_serving=saturated_fat,
+        trans_fat_per_serving=trans_fat,
         dining_hall=api_menu_item.station.period.day.dining_hall.name,
         station_name=api_menu_item.station.name,
     )
