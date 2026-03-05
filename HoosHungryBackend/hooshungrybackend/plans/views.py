@@ -45,6 +45,8 @@ def get_week_plan(request):
         'daily_protein_goal': plan.daily_protein_goal,
         'daily_carbs_goal': plan.daily_carbs_goal,
         'daily_fat_goal': plan.daily_fat_goal,
+        'daily_fiber_goal': plan.daily_fiber_goal,
+        'daily_sodium_goal': plan.daily_sodium_goal,
         'week_summary': week_summary,
     })
 
@@ -103,8 +105,8 @@ def get_daily_plan(request):
             'protein': plan.daily_protein_goal,
             'carbs': plan.daily_carbs_goal,
             'fat': plan.daily_fat_goal,
-            'fiber': None,
-            'sodium': None,
+            'fiber': plan.daily_fiber_goal,
+            'sodium': plan.daily_sodium_goal,
         }
     })
 
@@ -273,7 +275,11 @@ def update_plan_goals(request):
         plan.daily_carbs_goal = request.data['daily_carbs_goal']
     if 'daily_fat_goal' in request.data:
         plan.daily_fat_goal = request.data['daily_fat_goal']
-    
+    if 'daily_fiber_goal' in request.data:
+        plan.daily_fiber_goal = request.data['daily_fiber_goal']
+    if 'daily_sodium_goal' in request.data:
+        plan.daily_sodium_goal = request.data['daily_sodium_goal']
+
     plan.save()
     
     serializer = PlanSerializer(plan)

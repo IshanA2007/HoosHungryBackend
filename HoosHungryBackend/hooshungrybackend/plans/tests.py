@@ -96,3 +96,18 @@ class DailyMealPlanNutritionTest(TestCase):
         self.daily.refresh_from_db()
         self.assertEqual(self.daily.total_fiber, Decimal('6.00'))
         self.assertEqual(self.daily.total_sodium, Decimal('800.00'))
+
+
+class PlanFiberSodiumGoalsTest(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username='user3', password='pass')
+
+    def test_plan_has_fiber_and_sodium_goals(self):
+        plan = Plan.objects.create(
+            user=self.user,
+            week_start_date=datetime.date(2026, 3, 1),
+            daily_fiber_goal=25,
+            daily_sodium_goal=2300,
+        )
+        self.assertEqual(plan.daily_fiber_goal, 25)
+        self.assertEqual(plan.daily_sodium_goal, 2300)

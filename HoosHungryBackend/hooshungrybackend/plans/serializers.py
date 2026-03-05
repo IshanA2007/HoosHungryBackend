@@ -81,6 +81,7 @@ class PlanSerializer(serializers.ModelSerializer):
             'id', 'name', 'description', 'week_start_date',
             'daily_calorie_goal', 'daily_protein_goal',
             'daily_carbs_goal', 'daily_fat_goal',
+            'daily_fiber_goal', 'daily_sodium_goal',
             'created_at', 'updated_at'
         ]
         read_only_fields = ['created_at', 'updated_at']

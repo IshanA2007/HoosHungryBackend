@@ -18,7 +18,9 @@ class Plan(models.Model):
     daily_protein_goal = models.IntegerField(null=True, blank=True)
     daily_carbs_goal = models.IntegerField(null=True, blank=True)
     daily_fat_goal = models.IntegerField(null=True, blank=True)
-    
+    daily_fiber_goal = models.IntegerField(null=True, blank=True)
+    daily_sodium_goal = models.IntegerField(null=True, blank=True)
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
