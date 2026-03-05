@@ -166,3 +166,46 @@ def update_profile(request):
     profile.save()
     serializer = UserProfileSerializer(profile)
     return Response(serializer.data)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def suggest_goals(request):
+    """
+    Suggest daily calorie and macro goals based on goal_type and activity_level.
+    Uses a simple base calorie formula with activity multipliers.
+    """
+    profile = request.user.profile
+
+    # Base calories by activity level
+    activity_calories = {
+        'sedentary': 1800,
+        'light': 2000,
+        'moderate': 2200,
+        'active': 2500,
+        'very_active': 2800,
+    }
+
+    # Goal-type calorie adjustment
+    goal_adjustments = {
+        'maintain': 0,
+        'lose': -300,
+        'gain': +300,
+    }
+
+    base = activity_calories.get(profile.activity_level, 2200)
+    adjustment = goal_adjustments.get(profile.goal_type, 0)
+    calories = base + adjustment
+
+    # Standard macro splits: protein 25%, carbs 50%, fat 25%
+    protein = round((calories * 0.25) / 4)   # 4 kcal/g
+    carbs = round((calories * 0.50) / 4)     # 4 kcal/g
+    fat = round((calories * 0.25) / 9)       # 9 kcal/g
+
+    return Response({
+        'calories': calories,
+        'protein': protein,
+        'carbs': carbs,
+        'fat': fat,
+        'fiber': 28,       # Standard recommended daily fiber (g)
+        'sodium': 2300,    # FDA recommended daily sodium (mg)
+    })
