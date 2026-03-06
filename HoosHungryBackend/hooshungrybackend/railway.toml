@@ -1,2 +1,2 @@
 [deploy]
-startCommand = "poetry run python manage.py migrate && poetry run gunicorn config.wsgi:application --bind 0.0.0.0:$PORT --workers 1 --timeout 120 --log-level debug"
+startCommand = "poetry run python manage.py migrate && poetry run gunicorn config.wsgi:application --bind 0.0.0.0:$PORT --workers 1 --timeout 120 --log-level debug 2>&1"
