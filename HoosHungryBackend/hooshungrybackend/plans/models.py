@@ -49,13 +49,17 @@ class Plan(models.Model):
         default_protein = None
         default_carbs = None
         default_fat = None
-        
+        default_fiber = None
+        default_sodium = None
+
         if hasattr(user, 'profile'):
             default_cals = user.profile.default_calorie_goal
             default_protein = user.profile.default_protein_goal
             default_carbs = user.profile.default_carbs_goal
             default_fat = user.profile.default_fat_goal
-        
+            default_fiber = user.profile.default_fiber_goal
+            default_sodium = user.profile.default_sodium_goal
+
         plan, created = cls.objects.get_or_create(
             user=user,
             week_start_date=sunday,
@@ -65,6 +69,8 @@ class Plan(models.Model):
                 'daily_protein_goal': default_protein,
                 'daily_carbs_goal': default_carbs,
                 'daily_fat_goal': default_fat,
+                'daily_fiber_goal': default_fiber,
+                'daily_sodium_goal': default_sodium,
             }
         )
         return plan

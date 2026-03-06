@@ -157,6 +157,7 @@ def update_profile(request):
         'is_vegan', 'is_vegetarian', 'is_gluten_free',
         'default_calorie_goal', 'default_protein_goal',
         'default_carbs_goal', 'default_fat_goal',
+        'default_fiber_goal', 'default_sodium_goal',
         'goal_type', 'activity_level',
     ]
     for field in updatable:
