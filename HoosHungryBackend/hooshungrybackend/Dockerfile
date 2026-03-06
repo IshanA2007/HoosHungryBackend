@@ -27,4 +27,4 @@ RUN poetry config virtualenvs.create false \
 # Now copy the rest of the project
 COPY . .
 
-CMD python manage.py migrate && gunicorn config.wsgi:application --bind 0.0.0.0:$PORT --workers 2 --timeout 120
+CMD python manage.py migrate && gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 2 --timeout 120
