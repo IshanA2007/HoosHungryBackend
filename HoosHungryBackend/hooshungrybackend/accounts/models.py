@@ -29,6 +29,8 @@ class UserProfile(models.Model):
     default_protein_goal = models.IntegerField(null=True, blank=True)
     default_carbs_goal = models.IntegerField(null=True, blank=True)
     default_fat_goal = models.IntegerField(null=True, blank=True)
+    default_fiber_goal = models.IntegerField(null=True, blank=True)
+    default_sodium_goal = models.IntegerField(null=True, blank=True)
 
     GOAL_TYPE_CHOICES = [
         ('maintain', 'Maintain Weight'),
