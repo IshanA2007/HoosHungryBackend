@@ -147,6 +147,14 @@ def delete_plan(request, plan_id):
             status=status.HTTP_404_NOT_FOUND
         )
 
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_profile(request):
+    """Return the current user's extended profile fields."""
+    profile = request.user.profile
+    serializer = UserProfileSerializer(profile)
+    return Response(serializer.data)
+
 @api_view(['PATCH'])
 @permission_classes([IsAuthenticated])
 def update_profile(request):
