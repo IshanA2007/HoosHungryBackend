@@ -75,6 +75,27 @@ class FavoriteItem(models.Model):
         return f"{self.user.username} → {self.item_name}"
 
 
+class ItemRating(models.Model):
+    DINING_HALL_CHOICES = [
+        ('ohill', 'ohill'),
+        ('newcomb', 'newcomb'),
+        ('runk', 'runk'),
+    ]
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='ratings')
+    item_name = models.CharField(max_length=200)
+    dining_hall = models.CharField(max_length=10, choices=DINING_HALL_CHOICES)
+    is_upvote = models.BooleanField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('user', 'item_name', 'dining_hall')
+
+    def __str__(self):
+        vote = 'up' if self.is_upvote else 'down'
+        return f"{self.user.username} → {self.item_name} ({self.dining_hall}): {vote}"
+
+
 # Automatically create/update profile when user is created/updated
 @receiver(post_save, sender=User)
 def create_user_profile(sender, instance, created, **kwargs):
