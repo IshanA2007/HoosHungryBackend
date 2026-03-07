@@ -1,6 +1,7 @@
 from django.test import TestCase
 from django.contrib.auth.models import User
-from .models import UserProfile
+from django.db import IntegrityError
+from .models import UserProfile, ItemRating
 from accounts.models import UserProfile
 from rest_framework.test import APIClient
 from rest_framework.authtoken.models import Token
@@ -75,9 +76,6 @@ class SuggestGoalsEndpointTest(TestCase):
         self.assertEqual(response.status_code, 401)
 
 
-from .models import ItemRating
-
-
 class ItemRatingModelTest(TestCase):
     def setUp(self):
         self.user = User.objects.create_user(username='rater', password='pass')
@@ -93,7 +91,6 @@ class ItemRatingModelTest(TestCase):
         ItemRating.objects.create(
             user=self.user, item_name='Grilled Chicken', dining_hall='ohill', is_upvote=True
         )
-        from django.db import IntegrityError
         with self.assertRaises(IntegrityError):
             ItemRating.objects.create(
                 user=self.user, item_name='Grilled Chicken', dining_hall='ohill', is_upvote=False
@@ -133,9 +130,10 @@ class RatingsEndpointTest(TestCase):
 
     def test_post_vote_upserts_on_change(self):
         # First vote: upvote
-        self.client.post('/accounts/ratings/', {
+        res1 = self.client.post('/accounts/ratings/', {
             'item_name': 'Grilled Chicken', 'dining_hall': 'ohill', 'is_upvote': True
         }, format='json')
+        self.assertEqual(res1.status_code, 200)
         # Change to downvote
         res = self.client.post('/accounts/ratings/', {
             'item_name': 'Grilled Chicken', 'dining_hall': 'ohill', 'is_upvote': False
