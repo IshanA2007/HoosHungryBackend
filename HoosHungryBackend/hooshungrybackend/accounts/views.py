@@ -6,7 +6,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
 from .serializers import UserSerializer, PlanSerializer, UserProfileSerializer
-from .models import Plan, FavoriteItem
+from .models import Plan, FavoriteItem, ItemRating
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
@@ -243,3 +243,81 @@ def suggest_goals(request):
         'fiber': 28,       # Standard recommended daily fiber (g)
         'sodium': 2300,    # FDA recommended daily sodium (mg)
     })
+
+
+VALID_HALLS = {'ohill', 'newcomb', 'runk'}
+
+
+def _rating_aggregate(item_name: str, dining_hall: str, user) -> dict:
+    """Return upvote/downvote counts and the requesting user's vote for one item."""
+    qs = ItemRating.objects.filter(item_name=item_name, dining_hall=dining_hall)
+    upvotes = qs.filter(is_upvote=True).count()
+    downvotes = qs.filter(is_upvote=False).count()
+    try:
+        user_rating = qs.get(user=user)
+        user_vote = 'up' if user_rating.is_upvote else 'down'
+    except ItemRating.DoesNotExist:
+        user_vote = None
+    return {'upvotes': upvotes, 'downvotes': downvotes, 'user_vote': user_vote}
+
+
+@api_view(['GET', 'POST', 'DELETE'])
+@permission_classes([IsAuthenticated])
+def ratings(request):
+    """
+    GET  ?dining_hall=<hall>                         → bulk map of all rated items at that hall
+    POST  { item_name, dining_hall, is_upvote }      → upsert vote, returns aggregate
+    DELETE { item_name, dining_hall }                → remove vote, returns aggregate
+    """
+    if request.method == 'GET':
+        dining_hall = request.query_params.get('dining_hall', '').strip()
+        if dining_hall not in VALID_HALLS:
+            return Response(
+                {'error': f'dining_hall must be one of: {", ".join(VALID_HALLS)}'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        rated_names = (
+            ItemRating.objects
+            .filter(dining_hall=dining_hall)
+            .values_list('item_name', flat=True)
+            .distinct()
+        )
+        result = {
+            name: _rating_aggregate(name, dining_hall, request.user)
+            for name in rated_names
+        }
+        return Response({'ratings': result})
+
+    elif request.method == 'POST':
+        item_name = request.data.get('item_name', '').strip()
+        dining_hall = request.data.get('dining_hall', '').strip()
+        is_upvote = request.data.get('is_upvote')
+
+        if not item_name or dining_hall not in VALID_HALLS or is_upvote is None:
+            return Response(
+                {'error': 'item_name, dining_hall, and is_upvote are required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        ItemRating.objects.update_or_create(
+            user=request.user,
+            item_name=item_name,
+            dining_hall=dining_hall,
+            defaults={'is_upvote': bool(is_upvote)},
+        )
+        return Response(_rating_aggregate(item_name, dining_hall, request.user))
+
+    else:  # DELETE
+        item_name = request.data.get('item_name', '').strip()
+        dining_hall = request.data.get('dining_hall', '').strip()
+
+        if not item_name or dining_hall not in VALID_HALLS:
+            return Response(
+                {'error': 'item_name and dining_hall are required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        ItemRating.objects.filter(
+            user=request.user, item_name=item_name, dining_hall=dining_hall
+        ).delete()
+        return Response(_rating_aggregate(item_name, dining_hall, request.user))
