@@ -1,3 +1,4 @@
+from django.db import transaction
 from django.utils.dateparse import parse_date
 from django.utils.dateparse import parse_time
 from datetime import datetime
@@ -31,22 +32,26 @@ def update_dining_hall(hall: DiningHall, data: dict, hours: dict):
     date_str = data["date"]  # e.g., "09/16/2024"
     date_obj = datetime.strptime(date_str, "%m/%d/%Y").date()
     day_name = date_obj.strftime("%A")
-    
-    # Delete existing day data for this date and hall to avoid duplicates
-    Day.objects.filter(dining_hall=hall, date=date_obj).delete()
-    
-    # Create a new day entry
-    day_obj = Day.objects.create(
-        date=date_obj,
-        day_name=day_name,
-        open_time=hours["open_time"], 
-        close_time=hours["close_time"], 
-        dining_hall=hall
-    )
-    
-    # Loop through periods and add them to Day
-    for period_id, period_data in data["periods"].items():
-        add_period_to_day(period_id, period_data, hours, day_obj)
+
+    with transaction.atomic():
+        # Lock the hall row so concurrent scrapers wait instead of colliding
+        DiningHall.objects.select_for_update().get(pk=hall.pk)
+
+        # Delete existing day data for this date and hall to avoid duplicates
+        Day.objects.filter(dining_hall=hall, date=date_obj).delete()
+
+        # Create a new day entry
+        day_obj = Day.objects.create(
+            date=date_obj,
+            day_name=day_name,
+            open_time=hours["open_time"],
+            close_time=hours["close_time"],
+            dining_hall=hall
+        )
+
+        # Loop through periods and add them to Day
+        for period_id, period_data in data["periods"].items():
+            add_period_to_day(period_id, period_data, hours, day_obj)
 
 def add_period_to_day(period_id, period_data: dict, hours: dict, day: Day):
     period_name = period_data["name"]

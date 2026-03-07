@@ -1,6 +1,7 @@
 import json
 import re
-from datetime import date as date_type, timedelta
+import zoneinfo
+from datetime import date as date_type, datetime, timedelta
 
 import anthropic
 from django.conf import settings
@@ -15,24 +16,14 @@ from plans.models import Plan, DailyMealPlan
 from .models import ChatSession, ChatMessage
 
 
-SYSTEM_PROMPT_TEMPLATE = """\
+SYSTEM_PROMPT_STATIC = """\
 You are CavBot, a friendly dining assistant for UVA students. \
 Help them find meals matching their nutritional goals from today's actual dining hall menus.
 
 Today is {date}.
 
-USER GOALS: {calorie_goal} cal | {protein_goal}g protein | {carbs_goal}g carbs | {fat_goal}g fat
-DIETARY PREFERENCES: {dietary_prefs}
-
-TODAY'S PLAN SO FAR ({date}):
-  Already consumed: {consumed_cal} cal, {consumed_protein}g protein, \
-{consumed_carbs}g carbs, {consumed_fat}g fat
-  Remaining: {remaining_cal} cal, {remaining_protein}g protein, \
-{remaining_carbs}g carbs, {remaining_fat}g fat
-  Items added: {items_added}
-
-AVAILABLE MENU ITEMS TODAY (JSON array):
-{menu_json}
+AVAILABLE MENU ITEMS (pipe-delimited: id|name|hall|station|period|cal|pro|carb|fat|vegan|vegetarian|gf):
+{menu_data}
 
 When suggesting specific items, respond ONLY with valid JSON in this exact format:
 {{
@@ -53,34 +44,41 @@ When suggesting specific items, respond ONLY with valid JSON in this exact forma
 If not suggesting specific items, omit the "suggestions" field. \
 Always respond with valid JSON containing at least a "message" field."""
 
+SYSTEM_PROMPT_USER = """\
+USER GOALS: {calorie_goal} cal | {protein_goal}g protein | {carbs_goal}g carbs | {fat_goal}g fat
+DIETARY PREFERENCES: {dietary_prefs}
+
+TODAY'S PLAN SO FAR:
+  Already consumed: {consumed_cal} cal, {consumed_protein}g protein, \
+{consumed_carbs}g carbs, {consumed_fat}g fat
+  Remaining: {remaining_cal} cal, {remaining_protein}g protein, \
+{remaining_carbs}g carbs, {remaining_fat}g fat
+  Items added: {items_added}"""
+
 
 def _get_menu_context(today):
-    """Return a list of today's menu items across all dining halls and periods."""
-    items = []
+    """Return today's menu items as compact pipe-delimited rows, filtered to current/future periods."""
+    et = zoneinfo.ZoneInfo('America/New_York')
+    now_et = datetime.now(et).time()
+    rows = []
     days = Day.objects.filter(date=today).select_related('dining_hall')
     for day in days:
         for period in day.periods.prefetch_related('stations__menu_items__nutrition_info').all():
+            if period.end_time <= now_et:
+                continue
             for station in period.stations.all():
                 for item in station.menu_items.all():
                     try:
                         n = item.nutrition_info
-                        items.append({
-                            'id': item.id,
-                            'name': item.item_name,
-                            'dining_hall': day.dining_hall.name,
-                            'station': station.name,
-                            'period': period.name,
-                            'calories': int(n.calories or 0),
-                            'protein': round(float(n.protein or 0), 1),
-                            'carbs': round(float(n.total_carbohydrates or 0), 1),
-                            'fat': round(float(n.total_fat or 0), 1),
-                            'is_vegan': item.is_vegan,
-                            'is_vegetarian': item.is_vegetarian,
-                            'gluten_free': not item.is_gluten,
-                        })
+                        rows.append(
+                            f"{item.id}|{item.item_name}|{day.dining_hall.name}|{station.name}"
+                            f"|{period.name}|{int(n.calories or 0)}|{round(float(n.protein or 0), 1)}"
+                            f"|{round(float(n.total_carbohydrates or 0), 1)}|{round(float(n.total_fat or 0), 1)}"
+                            f"|{int(item.is_vegan)}|{int(item.is_vegetarian)}|{int(not item.is_gluten)}"
+                        )
                     except Exception:
                         pass
-    return items
+    return '\n'.join(rows)
 
 
 def _get_daily_plan_context(user, today):
@@ -107,9 +105,13 @@ def _get_daily_plan_context(user, today):
 
 
 def _build_system_prompt(user, today):
-    """Assemble the full system prompt with user context and menu data."""
+    """Return a list of system content blocks for the Messages API.
+
+    Block 1: static instructions + menu data (cached across users for the same time window)
+    Block 2: per-user goals and plan context (not cached)
+    """
     profile = user.profile
-    menu_items = _get_menu_context(today)
+    menu_data = _get_menu_context(today)
     plan_ctx = _get_daily_plan_context(user, today)
 
     calorie_goal = profile.default_calorie_goal or 2000
@@ -130,8 +132,12 @@ def _build_system_prompt(user, today):
     remaining_carbs = max(0.0, carbs_goal - plan_ctx['consumed_carbs'])
     remaining_fat = max(0.0, fat_goal - plan_ctx['consumed_fat'])
 
-    return SYSTEM_PROMPT_TEMPLATE.format(
+    static_text = SYSTEM_PROMPT_STATIC.format(
         date=today.strftime('%A, %B %d, %Y'),
+        menu_data=menu_data,
+    )
+
+    user_text = SYSTEM_PROMPT_USER.format(
         calorie_goal=calorie_goal,
         protein_goal=protein_goal,
         carbs_goal=carbs_goal,
@@ -146,8 +152,19 @@ def _build_system_prompt(user, today):
         remaining_carbs=round(remaining_carbs, 1),
         remaining_fat=round(remaining_fat, 1),
         items_added=', '.join(plan_ctx['items']) if plan_ctx['items'] else 'None yet',
-        menu_json=json.dumps(menu_items, separators=(',', ':')),
     )
+
+    return [
+        {
+            "type": "text",
+            "text": static_text,
+            "cache_control": {"type": "ephemeral"},
+        },
+        {
+            "type": "text",
+            "text": user_text,
+        },
+    ]
 
 
 def _parse_ai_response(response_text):
@@ -195,9 +212,9 @@ class ChatView(APIView):
         today = date_type.today()
         system_prompt = _build_system_prompt(user, today)
 
-        # Get or create session and load last 20 messages as conversation history
+        # Get or create session and load last 10 messages as conversation history
         session, _ = ChatSession.objects.get_or_create(user=user)
-        recent = session.messages.order_by('-timestamp')[:20]
+        recent = session.messages.order_by('-timestamp')[:10]
         history = [
             {'role': msg.role, 'content': msg.content}
             for msg in reversed(list(recent))
@@ -209,7 +226,7 @@ class ChatView(APIView):
         try:
             ai_response = client.messages.create(
                 model='claude-haiku-4-5-20251001',
-                max_tokens=1024,
+                max_tokens=4096,
                 system=system_prompt,
                 messages=history,
             )
