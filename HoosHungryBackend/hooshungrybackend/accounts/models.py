@@ -63,6 +63,18 @@ class UserProfile(models.Model):
         """Check if user has AI usage remaining"""
         return self.remaining_ai_usages > 0
 
+class FavoriteItem(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='favorites')
+    item_name = models.CharField(max_length=200)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('user', 'item_name')
+
+    def __str__(self):
+        return f"{self.user.username} → {self.item_name}"
+
+
 # Automatically create/update profile when user is created/updated
 @receiver(post_save, sender=User)
 def create_user_profile(sender, instance, created, **kwargs):

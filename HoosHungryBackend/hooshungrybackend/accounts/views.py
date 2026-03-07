@@ -6,7 +6,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
 from .serializers import UserSerializer, PlanSerializer, UserProfileSerializer
-from .models import Plan
+from .models import Plan, FavoriteItem
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
@@ -167,6 +167,31 @@ def update_profile(request):
     profile.save()
     serializer = UserProfileSerializer(profile)
     return Response(serializer.data)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_favorites(request):
+    names = list(request.user.favorites.values_list('item_name', flat=True))
+    return Response({'favorites': names})
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def add_favorite(request):
+    item_name = request.data.get('item_name', '').strip()
+    if not item_name:
+        return Response({'error': 'item_name is required'}, status=400)
+    FavoriteItem.objects.get_or_create(user=request.user, item_name=item_name)
+    return Response({'favorites': list(request.user.favorites.values_list('item_name', flat=True))})
+
+
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def remove_favorite(request):
+    item_name = request.data.get('item_name', '').strip()
+    request.user.favorites.filter(item_name=item_name).delete()
+    return Response({'favorites': list(request.user.favorites.values_list('item_name', flat=True))})
+
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])

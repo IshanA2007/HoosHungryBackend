@@ -12,4 +12,7 @@ urlpatterns = [
     path('plans/<int:plan_id>/delete/', views.delete_plan, name='delete_plan'),
     path('profile/update/', views.update_profile, name='update_profile'),
     path('profile/goals/suggest/', views.suggest_goals, name='suggest_goals'),
+    path('favorites/', views.get_favorites, name='get_favorites'),
+    path('favorites/add/', views.add_favorite, name='add_favorite'),
+    path('favorites/remove/', views.remove_favorite, name='remove_favorite'),
 ]
