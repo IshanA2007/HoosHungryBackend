@@ -61,15 +61,16 @@ def menu_info(request):
         # Find the dining hall
         dining_hall = DiningHall.objects.get(name=hall_name)
         
-        # Find today's day entry for this hall
-        day = Day.objects.filter(
-            dining_hall=dining_hall,
-            date=today
-        ).first()
-        
+        # Find today's day entry; fall back to nearest available date
+        day = (
+            Day.objects.filter(dining_hall=dining_hall, date=today).first()
+            or Day.objects.filter(dining_hall=dining_hall, date__gte=today).order_by("date").first()
+            or Day.objects.filter(dining_hall=dining_hall).order_by("-date").first()
+        )
+
         if not day:
             return Response(
-                {"error": f"No menu data available for {hall_name} on {today}. Please run the scraper to populate data."},
+                {"error": f"No menu data available for {hall_name}. Please run the scraper to populate data."},
                 status=status.HTTP_404_NOT_FOUND
             )
         
@@ -132,8 +133,12 @@ def available_periods(request):
     try:
         dining_hall = DiningHall.objects.get(name=hall_name)
 
-        # Get today's day entry
-        day = Day.objects.filter(dining_hall=dining_hall, date=today).first()
+        # Get today's day entry; fall back to nearest available date
+        day = (
+            Day.objects.filter(dining_hall=dining_hall, date=today).first()
+            or Day.objects.filter(dining_hall=dining_hall, date__gte=today).order_by("date").first()
+            or Day.objects.filter(dining_hall=dining_hall).order_by("-date").first()
+        )
         if not day:
             return Response(
                 {

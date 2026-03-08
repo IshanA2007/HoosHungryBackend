@@ -121,6 +121,13 @@ def add_menu_items_to_station(station_objs: dict, product_data: list):
 
         # Ingredients from IngredientStatement
         menu_item.ingredients = prod_info.get("IngredientStatement", "")
+
+        # Dietary flags from AvailableFilters
+        menu_item.is_vegan = bool(available_filters.get("IsVegan", False))
+        menu_item.is_vegetarian = bool(available_filters.get("IsVegetarian", False))
+        # is_gluten means "contains gluten" — opposite of IsGlutenFree
+        menu_item.is_gluten = not bool(available_filters.get("IsGlutenFree", True))
+
         menu_item.save()
 
         # NutritionInfo from NutritionalTree
