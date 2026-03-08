@@ -61,16 +61,16 @@ class MenuItem(models.Model):
 
 
 class NutritionInfo(models.Model):
-    calories = models.DecimalField(max_digits=6, decimal_places=2, blank=True, null=True)
-    protein = models.DecimalField(max_digits=6, decimal_places=2, blank=True, null=True)
-    total_carbohydrates = models.DecimalField(max_digits=6, decimal_places=2, blank=True, null=True)
-    cholesterol = models.DecimalField(max_digits=6, decimal_places=2, blank=True, null=True)
-    total_fat = models.DecimalField(max_digits=6, decimal_places=2, blank=True, null=True)
-    trans_fat = models.DecimalField(max_digits=6, decimal_places=2, blank=True, null=True)
-    saturated_fat = models.DecimalField(max_digits=6, decimal_places=2, blank=True, null=True)
-    total_sugars = models.DecimalField(max_digits=6, decimal_places=2, blank=True, null=True)
-    dietary_fiber = models.DecimalField(max_digits=6, decimal_places=2, blank=True, null=True)
-    sodium = models.DecimalField(max_digits=6, decimal_places=2, blank=True, null=True)
+    calories = models.DecimalField(max_digits=8, decimal_places=2, blank=True, null=True)
+    protein = models.DecimalField(max_digits=8, decimal_places=2, blank=True, null=True)
+    total_carbohydrates = models.DecimalField(max_digits=8, decimal_places=2, blank=True, null=True)
+    cholesterol = models.DecimalField(max_digits=8, decimal_places=2, blank=True, null=True)
+    total_fat = models.DecimalField(max_digits=8, decimal_places=2, blank=True, null=True)
+    trans_fat = models.DecimalField(max_digits=8, decimal_places=2, blank=True, null=True)
+    saturated_fat = models.DecimalField(max_digits=8, decimal_places=2, blank=True, null=True)
+    total_sugars = models.DecimalField(max_digits=8, decimal_places=2, blank=True, null=True)
+    dietary_fiber = models.DecimalField(max_digits=8, decimal_places=2, blank=True, null=True)
+    sodium = models.DecimalField(max_digits=8, decimal_places=2, blank=True, null=True)
     menu_item = models.OneToOneField(MenuItem, on_delete=models.CASCADE, related_name="nutrition_info")
     serving_size = models.CharField(max_length=100, blank=True, null=True)
 

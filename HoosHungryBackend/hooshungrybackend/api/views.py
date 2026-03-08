@@ -61,16 +61,11 @@ def menu_info(request):
         # Find the dining hall
         dining_hall = DiningHall.objects.get(name=hall_name)
         
-        # Find today's day entry; fall back to nearest available date
-        day = (
-            Day.objects.filter(dining_hall=dining_hall, date=today).first()
-            or Day.objects.filter(dining_hall=dining_hall, date__gte=today).order_by("date").first()
-            or Day.objects.filter(dining_hall=dining_hall).order_by("-date").first()
-        )
+        day = Day.objects.filter(dining_hall=dining_hall, date=today).first()
 
         if not day:
             return Response(
-                {"error": f"No menu data available for {hall_name}. Please run the scraper to populate data."},
+                {"error": f"Menu data for {hall_name} could not be loaded for today. Please try again later."},
                 status=status.HTTP_404_NOT_FOUND
             )
         
@@ -133,19 +128,11 @@ def available_periods(request):
     try:
         dining_hall = DiningHall.objects.get(name=hall_name)
 
-        # Get today's day entry; fall back to nearest available date
-        day = (
-            Day.objects.filter(dining_hall=dining_hall, date=today).first()
-            or Day.objects.filter(dining_hall=dining_hall, date__gte=today).order_by("date").first()
-            or Day.objects.filter(dining_hall=dining_hall).order_by("-date").first()
-        )
+        day = Day.objects.filter(dining_hall=dining_hall, date=today).first()
         if not day:
             return Response(
-                {
-                    "dining_hall": hall_name,
-                    "date": str(today),
-                    "periods": []
-                }
+                {"error": f"Menu data for {hall_name} could not be loaded for today. Please try again later."},
+                status=status.HTTP_404_NOT_FOUND
             )
 
         # Get all periods for this day
