@@ -2,7 +2,6 @@ from django.test import TestCase
 from django.contrib.auth.models import User
 from django.db import IntegrityError
 from .models import UserProfile, ItemRating
-from accounts.models import UserProfile
 from rest_framework.test import APIClient
 from rest_framework.authtoken.models import Token
 
